@@ -1,102 +1,152 @@
-    🍄 MarioRUN — Evolução com Algoritmo Genético
+# Mario 
 
-    Este projeto utiliza Algoritmos Genéticos para ensinar o Mario a atravessar o nível 1-1 do Super Mario Bros original.
+Treina um agente autônomo para jogar Super Mario Bros usando **Algoritmos Genéticos**. Sem rede neural, sem aprendizado supervisionado — apenas evolução pura.
 
-    A ideia é simples: o Mario aprende sozinho, por tentativa e erro, quais sequências de botões fazem ele ir mais longe.
+---
 
-    📋 Sumário
-    📝 Sobre o Projeto
-    🛠️ Tecnologias Utilizadas
-    ⚙️ Como Instalar
-    🚀 Como Rodar
-    🧠 Gerenciamento de Memória
-    🏗️ Estrutura do Código
-    📝 Sobre o Projeto
+## Como o Jogo Roda
 
-    O Mario começa sem saber absolutamente nada (movimentos aleatórios). A cada geração, acontece:
+O Super Mario Bros é executado por um **emulador de NES em Python** via `nes-py`. Não é uma simulação simplificada — é o jogo real rodando frame a frame dentro do processo Python.
 
-    🎮 Treino
-    20 indivíduos são testados simultaneamente
-    Execução em background (sem janela) → muito mais rápido
-    📏 Avaliação (Fitness)
-    Baseado na posição horizontal (x_pos)
-    Quem vai mais longe vence
-    🧬 Evolução
-    Os melhores indivíduos:
-    fazem crossover (mistura de DNA)
-    sofrem mutação (pequenas mudanças aleatórias)
-    👀 Visualização
-    O melhor Mario da geração é exibido na tela
-    Com os gráficos clássicos do NES
-    🛠️ Tecnologias Utilizadas
-    🐍 Python 3.11+
-    🎮 Gym Super Mario Bros — emulador e ambiente
-    🕹️ Nes-py — controle do NES
-    💾 Pickle — salvar/carregar o “cérebro”
-    ⚙️ Como Instalar
+```
+Python Script
+    └── gym-super-mario-bros   ← Interface OpenAI Gym
+            └── nes-py          ← Emulador NES completo
+                    └── ROM SMB ← O jogo de fato
+```
 
-    Abra o terminal (PowerShell ou CMD) e roda:
+A cada chamada de `env.step(ação)`, o emulador avança **1 frame (1/60s)**. O código repete cada ação por 6 frames consecutivos — o equivalente a segurar o botão por ~100ms, tempo necessário para pulos e corridas terem efeito físico real no jogo.
 
-    pip install gym-super-mario-bros nes-py
-    pip install "numpy<2.0"
+Em modo visual (`marioRun.py`), uma janela SDL/pyglet abre e exibe o jogo em tempo real. Em modo treino (`treino.py`), tudo roda sem interface gráfica, muito mais rápido.
 
-    ⚠️ Importante: usar NumPy < 2.0 pra evitar conflito com o Gym
+---
 
-    🚀 Como Rodar
+## Como o Algoritmo Genético Funciona
 
-    Certifique-se que o arquivo principal se chama:
+### 1. Representação — O Cromossomo
 
-    marioRUN.py
+Cada "Mario" é uma lista de inteiros (0–6), onde cada número é um botão do controle:
 
-    Depois execute:
+| Valor | Ação         |
+|-------|--------------|
+| 0     | Nenhum (NOOP) |
+| 1     | Andar → direita |
+| 2     | Andar + Pular |
+| 3     | Correr (B) |
+| 4     | Correr + Pular |
+| 5     | Pular no lugar |
+| 6     | Andar ← esquerda |
 
-    python marioRUN.py
-    python treino.py
+Um cromossomo de 1000 genes = ~100 segundos de jogo.
 
+### 2. Fitness — Como Medir o Desempenho
 
-    🧠 Gerenciamento de Memória
+```python
+nota_avaliacao = dist_maxima + max(0, recompensa_total * 0.1)
+```
 
-    O projeto salva o progresso automaticamente pra não perder o aprendizado.
+- **dist_maxima**: posição horizontal mais longe que o Mario chegou
+- **recompensa_total × 0.1**: bônus por trajetórias sustentadas, penaliza mortes
 
-    💾 Salvar e Carregar
+### 3. Seleção — Quem Sobrevive
 
-    O melhor indivíduo é salvo em:
+- Os **2 melhores** da geração passam intactos (elitismo)
+- O restante é gerado por **crossover + mutação** entre o top 1/3
 
-    melhor_mario.pkl
-    Quando o programa inicia:
-    Se o arquivo existir → continua aprendendo de onde parou
-    Se não → começa do zero
-    🔄 Resetar (Apagar Memória)
+### 4. Crossover — Combinando DNAs
 
-    Se quiser zerar tudo:
+```
+Pai 1: [1, 2, 1, 4, 0, 3, 2, 5]
+Pai 2: [3, 3, 4, 1, 2, 0, 1, 4]
+Ponto: ─────────────┤
+Filho: [1, 2, 1, 4, 2, 0, 1, 4]  ← melhor dos dois
+```
 
-    rm melhor_mario.pkl
+Um ponto de corte aleatório divide os cromossomos, e o filho herda a primeira metade de um pai e a segunda metade do outro.
 
-    Ou simplesmente deletar o arquivo manualmente.
+### 5. Mutação — Introduzindo Variação
 
-    🏗️ Estrutura do Código
+Cada gene tem 5% de chance de ser substituído por um valor aleatório. Taxa baixa = preserva bons genes, mas mantém exploração.
 
-    O projeto é dividido em duas partes principais:
+> ⚠️ Uma taxa de mutação alta (ex: 90%) destrói o DNA a cada geração — o algoritmo nunca converge.
 
-    🧍 Classe Individuo
+### 6. Persistência — Memória Entre Execuções
 
-    Responsável pelo comportamento de cada Mario:
+O melhor DNA encontrado é salvo automaticamente em `melhor_mario.pkl`. Ao reiniciar o treino, ele é recarregado e inserido na população inicial — o progresso nunca se perde.
 
-    treino()
-    Executa a simulação
-    mostrar=False → roda sem abrir janela (modo rápido)
-    crossover()
-    Mistura o DNA de dois indivíduos
-    mutacao()
-    Aplica mudanças aleatórias
-    🧠 Classe AlgoritmoGenetico
+```
+treino.py  ──salva──►  melhor_mario.pkl  ◄──lê──  marioRun.py
+```
 
-    Responsável pela lógica da evolução:
+---
 
-    Gerencia a população
-    Ordena os melhores indivíduos
-    Salva e carrega os arquivos .pkl
-    ⚠️ Nota Técnica
-    O projeto usa o ambiente v0
-    Isso garante os sprites originais do NES
-    Melhor para visualização da evolução
+## Estrutura do Projeto
+
+```
+mario-ag/
+├── treino.py           # Treino headless (sem janela)
+├── marioRun.py         # Apresentação visual (janela do jogo aberta)
+├── melhor_mario.pkl    # DNA do melhor Mario (gerado automaticamente)
+└── historico.pkl       # Histórico de distâncias por geração
+```
+
+---
+
+## Como Usar
+
+### Instalação:
+No PowerShell (Padrão do VS Code) 
+```bash
+use: Get-Content comandos.txt | iex
+```
+
+```bash
+pip install gym-super-mario-bros nes-py
+pip install "numpy<2.0"
+```
+
+### Treinar (rápido, sem interface)
+
+```bash
+python treino.py
+```
+
+Roda 100 gerações com população de 10. Salva progresso automaticamente. Pode ser interrompido e retomado.
+
+### Assistir o Melhor Mario
+
+```bash
+python marioRun.py
+```
+
+Carrega o melhor DNA do treino e abre a janela do jogo. Roda 2 gerações com população de 5.
+
+---
+
+## ⚙️ Parâmetros
+
+| Parâmetro       | treino.py | marioRun.py | Descrição |
+|----------------|-----------|-------------|-----------|
+| `tamanho_pop`  | 10        | 5           | Indivíduos por geração |
+| `n_geracoes`   | 100       | 2           | Gerações totais |
+| `n_frames`     | 1000      | 1000        | Ações por cromossomo |
+| `taxa_mutacao` | 0.05      | 0.05        | Prob. de mutar cada gene |
+
+---
+
+## O que Esperar
+
+- **Geração 0**: Mario aleatório, morre rapidamente
+- **Gerações 5–10**: Começa a andar para a direita consistentemente
+- **Gerações 20+**: Aprende a pular obstáculos básicos
+- **Gerações 50+**: Trajetórias mais longas e confiáveis
+
+O progresso não é linear — pode estagnar por algumas gerações e melhorar subitamente quando uma boa combinação de genes surge por crossover.
+
+---
+
+## Notas Técnicas
+
+- Em servidores Linux sem GUI, `marioRun.py` requer um display virtual: `Xvfb :99 -screen 0 1024x768x24 & DISPLAY=:99 python marioRun.py`
+- `treino.py` funciona em qualquer ambiente, incluindo servidores sem display
+- Os dois scripts compartilham o mesmo arquivo `.pkl` e podem ser alternados livremente

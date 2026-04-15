@@ -1,0 +1,2 @@
+pip install gym-super-mario-bros nes-py
+pip install "numpy<2.0"
