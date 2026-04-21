@@ -5,16 +5,18 @@ import random
 import pickle
 import os
 
+
 class Individuo:
     def __init__(self, n_frames, cromossomo=None):
         self.n_frames = n_frames
         self.nota_avaliacao = 0
+        self.geracao = 0
         if cromossomo:
             self.cromossomo = list(cromossomo)
         else:
             self.cromossomo = [random.randint(0, 6) for _ in range(n_frames)]
 
-    def avaliar_visual(self):
+    def avaliacao(self):
         env = gym_super_mario_bros.make('SuperMarioBros-1-1-v0', render_mode='human', apply_api_compatibility=True)
         env = JoypadSpace(env, SIMPLE_MOVEMENT)
 
@@ -42,20 +44,29 @@ class Individuo:
         self.nota_avaliacao = dist_maxima + max(0, recompensa_total * 0.1)
 
     def mutacao(self, taxa):
+        novo_cromossomo = list(self.cromossomo)
         for i in range(self.n_frames):
             if random.random() < taxa:
-                self.cromossomo[i] = random.randint(0, 6)
-        return self
+                novo_cromossomo[i] = random.randint(0, 6)
+        return Individuo(self.n_frames, novo_cromossomo)
 
     def crossover(self, outro):
         ponto = random.randint(1, self.n_frames - 1)
-        dna_filho = self.cromossomo[:ponto] + outro.cromossomo[ponto:]
-        return Individuo(self.n_frames, dna_filho)
+
+        # Dois filhos: um com DNA do pai1+pai2, outro com pai2+pai1
+        dna_filho1 = self.cromossomo[:ponto] + outro.cromossomo[ponto:]
+        dna_filho2 = outro.cromossomo[:ponto] + self.cromossomo[ponto:]
+
+        return Individuo(self.n_frames, dna_filho1), Individuo(self.n_frames, dna_filho2)
 
 
 class AlgoritmoGenetico:
-    def __init__(self, tamanho_pop):
-        self.tamanho_pop = tamanho_pop
+    def __init__(self, tamanho_populacao):
+        self.tamanho_populacao = tamanho_populacao
+        self.populacao = []
+        self.geracao = 0
+        self.melhor_solucao = None
+        self.lista_solucoes = []
         self.arquivo_save = "melhor_mario.pkl"
 
     def salvar(self, dna):
@@ -68,10 +79,8 @@ class AlgoritmoGenetico:
                 return pickle.load(f)
         return None
 
-    def resolver(self, n_geracoes, n_frames, taxa_mutacao):
-        print(f"marioRun (Modo Visual) | Pop: {self.tamanho_pop} | Frames: {n_frames}")
-
-        populacao = [Individuo(n_frames) for _ in range(self.tamanho_pop)]
+    def inicializa_populacao(self, n_frames):
+        self.populacao = [Individuo(n_frames) for _ in range(self.tamanho_populacao)]
 
         dna_salvo = self.carregar()
         if dna_salvo:
@@ -79,49 +88,115 @@ class AlgoritmoGenetico:
             while len(dna_ajustado) < n_frames:
                 dna_ajustado.append(random.randint(0, 6))
             print("Memoria carregada! Mestre na populacao.")
-            populacao[0].cromossomo = dna_ajustado
+            self.populacao[0].cromossomo = dna_ajustado
 
-        melhor_global = 0
+        self.melhor_solucao = self.populacao[0]
 
-        for g in range(n_geracoes):
+    def ordena_populacao(self):
+        self.populacao = sorted(self.populacao,
+                                key=lambda ind: ind.nota_avaliacao,
+                                reverse=True)
+
+    def melhor_individuo(self, individuo):
+        if individuo.nota_avaliacao > self.melhor_solucao.nota_avaliacao:
+            self.melhor_solucao = individuo
+
+    def soma_avaliacoes(self):
+        return sum(ind.nota_avaliacao for ind in self.populacao)
+
+    def seleciona_pai(self, soma_avaliacao):
+        # Roleta: pais com maior nota têm mais chance de ser escolhidos
+        pai = -1
+        valor_sorteado = random.random() * soma_avaliacao
+        soma = 0
+        i = 0
+        while i < len(self.populacao) and soma < valor_sorteado:
+            soma += self.populacao[i].nota_avaliacao
+            pai += 1
+            i += 1
+        return pai
+
+    def visualiza_geracao(self):
+        melhor = self.populacao[0]
+        print("G:%s -> Distancia: %.1f | Cromossomo: %s" % (
+            melhor.geracao,
+            melhor.nota_avaliacao,
+            melhor.cromossomo[:10]  # exibe só os 10 primeiros genes pra não poluir
+        ))
+
+    def resolver(self, taxa_mutacao, numero_geracoes, n_frames):
+        print(f"marioRun | Pop: {self.tamanho_populacao} | Frames: {n_frames}")
+
+        self.inicializa_populacao(n_frames)
+
+        # Avalia população inicial
+        for individuo in self.populacao:
+            print(f"Avaliando individuo...")
+            individuo.avaliacao()
+
+        self.ordena_populacao()
+        self.melhor_solucao = self.populacao[0]
+        self.lista_solucoes.append(self.melhor_solucao.nota_avaliacao)
+        self.visualiza_geracao()
+
+        for geracao in range(numero_geracoes):
             print(f"\n{'='*40}")
-            print(f"  GERACAO {g}")
+            print(f"  GERACAO {geracao + 1}")
             print(f"{'='*40}")
 
-            for i, ind in enumerate(populacao):
-                print(f"Exibindo Individuo {i+1}/{self.tamanho_pop}...")
-                ind.avaliar_visual()
-                print(f"   Distancia: {ind.nota_avaliacao:.1f}m")
+            soma_avaliacao = self.soma_avaliacoes()
 
-            populacao.sort(key=lambda x: x.nota_avaliacao, reverse=True)
-            melhor = populacao[0]
+            # Caso todos tenham nota 0 (geração inicial ruim), usa seleção uniforme
+            if soma_avaliacao == 0:
+                soma_avaliacao = 1
+                for ind in self.populacao:
+                    ind.nota_avaliacao = 1
 
-            if melhor.nota_avaliacao > melhor_global:
-                melhor_global = melhor.nota_avaliacao
-                print(f"\nNOVO RECORDE: {melhor_global:.1f}m!")
-            print(f"Recorde da Geracao {g}: {melhor.nota_avaliacao:.1f}m | Global: {melhor_global:.1f}m")
+            nova_populacao = []
 
-            self.salvar(melhor.cromossomo)
+            # Gera dois filhos por vez, igual ao da mochila
+            for _ in range(0, self.tamanho_populacao, 2):
+                pai1 = self.seleciona_pai(soma_avaliacao)
+                pai2 = self.seleciona_pai(soma_avaliacao)
 
-            nova_pop = []
-            nova_pop.append(Individuo(n_frames, populacao[0].cromossomo))
-            nova_pop.append(Individuo(n_frames, populacao[1].cromossomo))
+                filhos = self.populacao[pai1].crossover(self.populacao[pai2])
 
-            elite = populacao[:max(3, self.tamanho_pop // 2)]
-            while len(nova_pop) < self.tamanho_pop:
-                pai1 = random.choice(elite)
-                pai2 = random.choice(elite)
-                filho = pai1.crossover(pai2)
-                filho.mutacao(taxa_mutacao)
-                nova_pop.append(filho)
+                filho1 = filhos[0].mutacao(taxa_mutacao)
+                filho2 = filhos[1].mutacao(taxa_mutacao)
+                filho1.geracao = geracao + 1
+                filho2.geracao = geracao + 1
 
-            populacao = nova_pop
+                nova_populacao.append(filho1)
+                nova_populacao.append(filho2)
+
+            # Antiga população vai para o "lixo"
+            self.populacao = nova_populacao[:self.tamanho_populacao]
+
+            for individuo in self.populacao:
+                print(f"Avaliando individuo...")
+                individuo.avaliacao()
+
+            self.ordena_populacao()
+            self.visualiza_geracao()
+
+            melhor = self.populacao[0]
+            self.lista_solucoes.append(melhor.nota_avaliacao)
+            self.melhor_individuo(melhor)
+            self.salvar(self.melhor_solucao.cromossomo)
+
+        print("\nMelhor solucao -> G: %s | Distancia: %.1f | Cromossomo: %s" % (
+            self.melhor_solucao.geracao,
+            self.melhor_solucao.nota_avaliacao,
+            self.melhor_solucao.cromossomo[:10]
+        ))
+
+        return self.melhor_solucao.cromossomo
 
 
 if __name__ == "__main__":
-    ag = AlgoritmoGenetico(tamanho_pop=10)
+    ag = AlgoritmoGenetico(tamanho_populacao=10)
     ag.resolver(
-        n_geracoes=50,
-        n_frames=1000,
-        taxa_mutacao=0.05
+        taxa_mutacao=0.05,
+        numero_geracoes=50,
+        n_frames=1000
     )
