@@ -134,13 +134,4 @@ Carrega o melhor DNA do treino e abre a janela do jogo. Roda 2 gerações com po
 
 ---
 
-## O que Esperar
 
-- **Geração 0**: Mario aleatório, morre rapidamente
-- **Gerações 5–10**: Começa a andar para a direita consistentemente
-- **Gerações 20+**: Aprende a pular obstáculos básicos
-- **Gerações 50+**: Trajetórias mais longas e confiáveis
-
-O progresso não é linear — pode estagnar por algumas gerações e melhorar subitamente quando uma boa combinação de genes surge por crossover.
-
----
