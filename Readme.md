@@ -1,137 +1,60 @@
-# Mario 
+# 🍄 Mario Evolution
 
-Treina um agente autônomo para jogar Super Mario Bros usando **Algoritmos Genéticos**. Sem rede neural, sem aprendizado supervisionado — apenas evolução pura.
-
----
-
-## Como o Jogo Roda
-
-O Super Mario Bros é executado por um **emulador de NES em Python** via `nes-py`. Não é uma simulação simplificada — é o jogo real rodando frame a frame dentro do processo Python.
-
-```
-Python Script
-    └── gym-super-mario-bros   ← Interface OpenAI Gym
-            └── nes-py          ← Emulador NES completo
-                    └── ROM SMB ← O jogo de fato
-```
-
-A cada chamada de `env.step(ação)`, o emulador avança **1 frame (1/60s)**. O código repete cada ação por 6 frames consecutivos — o equivalente a segurar o botão por ~100ms, tempo necessário para pulos e corridas terem efeito físico real no jogo.
-
-Em modo visual (`marioRun.py`), uma janela SDL/pyglet abre e exibe o jogo em tempo real. Em modo treino (`treino.py`), tudo roda sem interface gráfica, muito mais rápido.
+Este projeto utiliza **Algoritmos Genéticos** para ensinar um agente a jogar Super Mario Bros de forma autônoma. Não há redes neurais aqui — apenas evolução pura através de tentativa e erro.
 
 ---
 
-## Como o Algoritmo Genético Funciona
+## 🕹️ Como funciona?
 
-### 1. Representação — O Cromossomo
+O algoritmo simula gerações de "Marios". Cada indivíduo tem um **DNA** (lista de comandos) e é avaliado pelo quão longe consegue chegar na fase.
 
-Cada "Mario" é uma lista de inteiros (0–6), onde cada número é um botão do controle:
-
-| Valor | Ação         |
-|-------|--------------|
-| 0     | Nenhum (NOOP) |
-| 1     | Andar → direita |
-| 2     | Andar + Pular |
-| 3     | Correr (B) |
-| 4     | Correr + Pular |
-| 5     | Pular no lugar |
-| 6     | Andar ← esquerda |
-
-Um cromossomo de 1000 genes = ~100 segundos de jogo.
-
-### 2. Fitness — Como Medir o Desempenho
-
-```python
-nota_avaliacao = dist_maxima + max(0, recompensa_total * 0.1)
-```
-
-- **dist_maxima**: posição horizontal mais longe que o Mario chegou
-- **recompensa_total × 0.1**: bônus por trajetórias sustentadas, penaliza mortes
-
-### 3. Seleção — Quem Sobrevive
-
-- Os **2 melhores** da geração passam intactos (elitismo)
-- O restante é gerado por **crossover + mutação** entre o top 1/3
-
-### 4. Crossover — Combinando DNAs
-
-```
-Pai 1: [1, 2, 1, 4, 0, 3, 2, 5]
-Pai 2: [3, 3, 4, 1, 2, 0, 1, 4]
-Ponto: ─────────────┤
-Filho: [1, 2, 1, 4, 2, 0, 1, 4]  ← melhor dos dois
-```
-
-Um ponto de corte aleatório divide os cromossomos, e o filho herda a primeira metade de um pai e a segunda metade do outro.
-
-### 5. Mutação — Introduzindo Variação
-
-Cada gene tem 5% de chance de ser substituído por um valor aleatório. Taxa baixa = preserva bons genes, mas mantém exploração.
-
-> ⚠️ Uma taxa de mutação alta (ex: 90%) destrói o DNA a cada geração — o algoritmo nunca converge.
-
-### 6. Persistência — Memória Entre Execuções
-
-O melhor DNA encontrado é salvo automaticamente em `melhor_mario.pkl`. Ao reiniciar o treino, ele é recarregado e inserido na população inicial — o progresso nunca se perde.
-
-```
-treino.py  ──salva──►  melhor_mario.pkl  ◄──lê──  marioRun.py
-```
+### O Ciclo Evolutivo:
+1.  **Geração Aleatória**: Começamos com movimentos totalmente aleatórios.
+2.  **Avaliação (Fitness)**: O Mario que chegar mais longe (maior coordenada X) ganha a melhor nota.
+3.  **Seleção**: Os melhores indivíduos são escolhidos para serem os "pais" da próxima geração.
+4.  **Crossover**: Os DNAs dos pais são misturados para criar filhos com características de ambos.
+5.  **Mutação**: Pequenas mudanças aleatórias são introduzidas para descobrir novos caminhos.
 
 ---
 
-## Estrutura do Projeto
+## 📂 Estrutura do Projeto
 
-```
-mario-ag/
-├── treino.py           # Treino headless (sem janela)
-├── marioRun.py         # Apresentação visual (janela do jogo aberta)
-├── melhor_mario.pkl    # DNA do melhor Mario (gerado automaticamente)
-└── historico.pkl       # Histórico de distâncias por geração
-```
+*   **`marioRun.py`**: O script principal que roda o jogo e o algoritmo evolutivo.
+*   **`melhor_mario.pkl`**: Arquivo de "memória". Ele salva o melhor DNA encontrado para que o progresso não seja perdido ao fechar o programa.
+*   **`Graficos/`**: Pasta contendo visualizações da evolução do algoritmo.
 
 ---
 
-## Como Usar
+## 🚀 Como Rodar
 
-### Instalação:
-No PowerShell (Padrão do VS Code) 
-```bash
-use: Get-Content comandos.txt | iex
-```
+### 1. Instalação
+Certifique-se de ter o Python instalado e execute os comandos abaixo no terminal:
 
 ```bash
 pip install gym-super-mario-bros nes-py
 pip install "numpy<2.0"
 ```
 
-### Treinar (rápido, sem interface)
-
-```bash
-python treino.py
-```
-
-Roda 100 gerações com população de 10. Salva progresso automaticamente. Pode ser interrompido e retomado.
-
-### Assistir o Melhor Mario
+### 2. Execução
+Para ver o Mario evoluindo em tempo real:
 
 ```bash
 python marioRun.py
 ```
 
-Carrega o melhor DNA do treino e abre a janela do jogo. Roda 2 gerações com população de 5.
+---
+
+## ⚙️ Configurações (em `marioRun.py`)
+
+Você pode ajustar o comportamento da evolução alterando estas variáveis no código:
+
+| Parâmetro | Valor Padrão | Descrição |
+| :--- | :--- | :--- |
+| `tamanho_populacao` | 10 | Quantos Marios existem por geração. |
+| `numero_geracoes` | 50 | Quantas vezes o processo de evolução se repetirá. |
+| `n_frames` | 1000 | Tempo máximo (em frames) que cada Mario tem para agir. |
+| `taxa_mutacao` | 0.05 (5%) | Chance de um movimento ser alterado aleatoriamente. |
 
 ---
 
-## ⚙️ Parâmetros
-
-| Parâmetro       | treino.py | marioRun.py | Descrição |
-|----------------|-----------|-------------|-----------|
-| `tamanho_pop`  | 10        | 5           | Indivíduos por geração |
-| `n_geracoes`   | 100       | 2           | Gerações totais |
-| `n_frames`     | 1000      | 1000        | Ações por cromossomo |
-| `taxa_mutacao` | 0.05      | 0.05        | Prob. de mutar cada gene |
-
----
-
-
+> **Nota:** O progresso é salvo automaticamente. Se você fechar e abrir o script, ele continuará a partir do melhor Mario encontrado anteriormente!
