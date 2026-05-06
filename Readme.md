@@ -144,9 +144,3 @@ Carrega o melhor DNA do treino e abre a janela do jogo. Roda 2 gerações com po
 O progresso não é linear — pode estagnar por algumas gerações e melhorar subitamente quando uma boa combinação de genes surge por crossover.
 
 ---
-
-## Notas Técnicas
-
-- Em servidores Linux sem GUI, `marioRun.py` requer um display virtual: `Xvfb :99 -screen 0 1024x768x24 & DISPLAY=:99 python marioRun.py`
-- `treino.py` funciona em qualquer ambiente, incluindo servidores sem display
-- Os dois scripts compartilham o mesmo arquivo `.pkl` e podem ser alternados livremente
