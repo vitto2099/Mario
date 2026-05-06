@@ -1,4 +1,4 @@
-# 🍄 Mario Evolution
+# 🍄 Mario 
 
 Este projeto utiliza **Algoritmos Genéticos** para ensinar um agente a jogar Super Mario Bros de forma autônoma. Não há redes neurais aqui — apenas evolução pura através de tentativa e erro.
 
@@ -57,4 +57,3 @@ Você pode ajustar o comportamento da evolução alterando estas variáveis no c
 
 ---
 
-> **Nota:** O progresso é salvo automaticamente. Se você fechar e abrir o script, ele continuará a partir do melhor Mario encontrado anteriormente!
