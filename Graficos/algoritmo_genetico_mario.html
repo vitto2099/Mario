@@ -1,0 +1,361 @@
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+  :root {
+    --mario-red: #e4000f;
+    --mario-blue: #049cd8;
+    --mario-yellow: #fbd000;
+    --mario-green: #43b047;
+    --mario-brick: #b0604d;
+    --text-main: #2b2d42;
+    --bg-window: #ffffff;
+  }
+
+  /* Estética Pixel/Retro */
+  .ga-container {
+    font-family: 'Press Start 2P', cursive;
+    /* Fonte Retro */
+    color: var(--text-main);
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 30px;
+    background: #5c94fc;
+    /* Azul céu do Mario */
+    border: 6px solid #000;
+    box-shadow: 10px 10px 0px rgba(0, 0, 0, 0.2);
+    image-rendering: pixelated;
+  }
+
+  .header-block {
+    background: var(--bg-window);
+    border: 4px solid #000;
+    padding: 20px;
+    margin-bottom: 30px;
+    box-shadow: 6px 6px 0px var(--mario-brick);
+  }
+
+  .nav-menu {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 25px;
+    justify-content: center;
+  }
+
+  .nav-btn {
+    font-family: 'Press Start 2P', cursive;
+    padding: 12px;
+    border: 4px solid #000;
+    background: var(--mario-brick);
+    color: white;
+    cursor: pointer;
+    font-size: 10px;
+    transition: all 0.1s;
+    box-shadow: 4px 4px 0px #5d2e24;
+  }
+
+  .nav-btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px #5d2e24;
+  }
+
+  .nav-btn.active {
+    background: var(--mario-yellow);
+    color: #000;
+    box-shadow: 4px 4px 0px #b79900;
+    transform: translateY(2px);
+  }
+
+  #content {
+    background: var(--bg-window);
+    border: 4px solid #000;
+    padding: 30px;
+    min-height: 400px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Decoração de tijolos no fundo do conteúdo */
+  #content::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 10px;
+    background: repeating-linear-gradient(90deg, var(--mario-brick), var(--mario-brick) 40px, #000 40px, #000 44px);
+  }
+
+  .step-header h2 {
+    font-size: 16px;
+    color: var(--mario-red);
+    text-transform: uppercase;
+    margin-top: 0;
+  }
+
+  .gene {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    border: 3px solid #000;
+    font-size: 14px;
+    text-align: center;
+    line-height: 32px;
+    margin: 2px;
+    background: #fff;
+  }
+
+  .formula-box {
+    background: #000;
+    color: var(--mario-green);
+    padding: 20px;
+    border: 4px double var(--mario-green);
+    font-size: 12px;
+    line-height: 1.6;
+    margin: 20px 0;
+  }
+
+  .btn-refresh {
+    font-family: 'Press Start 2P', cursive;
+    background: var(--mario-green);
+    color: white;
+    border: 3px solid #000;
+    padding: 10px;
+    cursor: pointer;
+    font-size: 10px;
+    margin-bottom: 20px;
+    box-shadow: 4px 4px 0px #2a702d;
+  }
+
+  .btn-refresh:active {
+    box-shadow: none;
+    transform: translate(2px, 2px);
+  }
+
+  p {
+    font-size: 12px;
+    line-height: 1.8;
+    font-family: sans-serif;
+    font-weight: bold;
+  }
+
+  .action-badge {
+    background: #eee;
+    border: 2px solid #000;
+    padding: 5px;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'Press Start 2P', cursive;
+  }
+</style>
+
+<div class="ga-container">
+  <div class="header-block">
+    <h1 style="margin:0; font-size: 20px; color: var(--mario-red); text-shadow: 3px 3px 0px #000;">SUPER ALGORITMO
+      GENÉTICO</h1>
+    <p style="color: var(--mario-blue); margin: 10px 0 0; font-family: 'Press Start 2P'; font-size: 8px;">WORLD 1-1:
+      EVOLUÇÃO DO DNA</p>
+  </div>
+
+  <div class="nav-menu">
+    <button onclick="showStep(0)" class="nav-btn active" id="btn0">DNA</button>
+    <button onclick="showStep(1)" class="nav-btn" id="btn1">SCORE</button>
+    <button onclick="showStep(2)" class="nav-btn" id="btn2">ROLETA</button>
+    <button onclick="showStep(3)" class="nav-btn" id="btn3">CROSS</button>
+    <button onclick="showStep(4)" class="nav-btn" id="btn4">MUTAR</button>
+    <button onclick="showStep(5)" class="nav-btn" id="btn5">LOOP</button>
+  </div>
+
+  <div id="content"></div>
+</div>
+
+<script>
+  const steps = [
+    {
+      title: "🧬 ITEM: CROMOSSOMO",
+      html: `
+      <p>Cada Mario carrega uma lista de comandos (genes). É o "Controle Automático" dele!</p>
+      <div style="background:#eee; padding:15px; border:3px solid #000; margin-bottom:20px">
+        <div id="genes-display"></div>
+      </div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+        ${['Parado', 'Direita', 'Correr', 'Pular', 'Pular+Dir', 'Esq', 'Pular+Esq'].map((a, i) => `
+          <div class="action-badge">
+            <span class="gene" style="background:var(--mario-yellow); width:20px; height:20px; line-height:20px; font-size:10px; border-width:2px;">${i}</span>
+            <span>${a}</span>
+          </div>`).join('')}
+      </div>
+    `
+    },
+    {
+      title: "🎮 FITNESS: PONTUAÇÃO",
+      html: `
+      <p>O algoritmo avalia quem merece o "Power-up" da sobrevivência.</p>
+      <div class="formula-box">
+        MÉTRICA DE SUCESSO:<br>
+        FITNESS = DISTÂNCIA + (COINS * 0.1)
+      </div>
+      <div style="display:flex; gap:10px; margin-top:20px">
+        <div style="flex:1; border:3px solid #000; padding:10px; background:#ffcccb">
+          <h4 style="font-size:10px; margin:0">GAME OVER 💀</h4>
+          <p style="font-size:11px">Morreu no buraco? Fitness baixo.</p>
+        </div>
+        <div style="flex:1; border:3px solid #000; padding:10px; background:#d4edda">
+          <h4 style="font-size:10px; margin:0">CASTELO 🚩</h4>
+          <p style="font-size:11px">Chegou na bandeira? Elite!</p>
+        </div>
+      </div>
+    `
+    },
+    {
+      title: "🎰 SELEÇÃO: ROLETA",
+      html: `
+      <p>Marios com scores altos ganham fatias maiores na roleta da sorte!</p>
+      <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap">
+        <canvas id="roleta" width="160" height="160"></canvas>
+        <div style="flex:1">
+           <button class="btn-refresh" onclick="sortearPai()">START SELEÇÃO!</button>
+           <div id="roleta-legend" style="font-family:'Press Start 2P'; font-size:8px;"></div>
+           <div id="sorteio-result" style="margin-top:15px; font-size:10px; color:var(--mario-red)"></div>
+        </div>
+      </div>
+    `
+    },
+    {
+      title: "🔀 CROSSOVER: FUSÃO",
+      html: `
+      <p>Pegamos metade dos comandos do Pai A e metade do Pai B.</p>
+      <button class="btn-refresh" onclick="novoCrossover()">GERAR FILHO!</button>
+      <div id="crossover-display"></div>
+    `
+    },
+    {
+      title: "☢️ MUTAÇÃO: GLITCH",
+      html: `
+      <p>Um erro aleatório no código! Às vezes, um Mario "burro" aprende a pular por causa de um erro.</p>
+      <button class="btn-refresh" onclick="novasMutacoes()">CAUSAR ERRO!</button>
+      <div id="mutacao-display"></div>
+    `
+    },
+    {
+      title: "🔄 NEXT LEVEL: CICLO",
+      html: `
+      <div style="background:#000; color:white; padding:15px; border:4px solid var(--mario-brick)">
+        <p style="color:var(--mario-yellow); font-size:10px; font-family:'Press Start 2P'">REPETIR 50 VEZES</p>
+        <ol style="font-size:10px; line-height:2; font-family:'Press Start 2P'">
+          <li>JOGAR FASE</li>
+          <li>DAR NOTA</li>
+          <li>ESCOLHER PAIS</li>
+          <li>CRIAR FILHOS</li>
+          <li>EVOLUIR!</li>
+        </ol>
+      </div>
+    `
+    }
+  ];
+
+  function showStep(i) {
+    document.querySelectorAll('.nav-btn').forEach((b, idx) => {
+      b.classList.toggle('active', idx === i);
+    });
+
+    const s = steps[i];
+    const content = document.getElementById('content');
+    content.innerHTML = `
+    <div class="step-header">
+      <h2>${s.title}</h2>
+    </div>
+    ${s.html}
+  `;
+
+    if (i === 0) drawGenes();
+    if (i === 2) { drawRoleta(); drawRoletaLegend(); }
+    if (i === 3) novoCrossover();
+    if (i === 4) novasMutacoes();
+  }
+
+  function drawGenes() {
+    const d = document.getElementById('genes-display');
+    if (!d) return;
+    const colors = ['#fff', '#fbd000', '#ff4d6d', '#049cd8', '#43b047', '#b0604d', '#6a0dad'];
+    const genes = Array.from({ length: 20 }, () => Math.floor(Math.random() * 7));
+    d.innerHTML = genes.map(g => `<span class="gene" style="background:${colors[g]}">${g}</span>`).join('');
+  }
+
+  const population = [
+    { name: 'SUPER A', score: 500, color: '#e4000f' },
+    { name: 'MARIO B', score: 300, color: '#049cd8' },
+    { name: 'LUIGI C', score: 150, color: '#43b047' },
+    { name: 'TOAD D', score: 50, color: '#fbd000' },
+  ];
+
+  function drawRoleta() {
+    const c = document.getElementById('roleta');
+    if (!c) return;
+    const ctx = c.getContext('2d');
+    const total = population.reduce((a, p) => a + p.score, 0);
+    let start = -Math.PI / 2;
+    population.forEach(p => {
+      const slice = (p.score / total) * 2 * Math.PI;
+      ctx.beginPath(); ctx.moveTo(80, 80);
+      ctx.arc(80, 80, 75, start, start + slice);
+      ctx.fillStyle = p.color;
+      ctx.fill();
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      start += slice;
+    });
+  }
+
+  function drawRoletaLegend() {
+    const d = document.getElementById('roleta-legend');
+    if (!d) return;
+    d.innerHTML = population.map(p => `<div style="margin-bottom:5px"><span style="color:${p.color}">■</span> ${p.name}</div>`).join('');
+  }
+
+  function sortearPai() {
+    const total = population.reduce((a, p) => a + p.score, 0);
+    const roll = Math.random() * total;
+    let soma = 0, escolhido;
+    for (const p of population) { soma += p.score; if (soma >= roll) { escolhido = p; break; } }
+    document.getElementById('sorteio-result').innerHTML = `WINNER: ${escolhido.name}!`;
+  }
+
+  function novoCrossover() {
+    const d = document.getElementById('crossover-display');
+    const n = 10;
+    const p1 = Array.from({ length: n }, () => Math.floor(Math.random() * 7));
+    const p2 = Array.from({ length: n }, () => Math.floor(Math.random() * 7));
+    const ponto = 4;
+    const f1 = [...p1.slice(0, ponto), ...p2.slice(ponto)];
+
+    const renderG = (arr, label, color) => `
+    <div style="margin-bottom:10px">
+      <div style="font-size:8px; font-family:'Press Start 2P'">${label}</div>
+      ${arr.map(g => `<span class="gene" style="background:${color}; width:20px; height:20px; line-height:20px; font-size:10px;">${g}</span>`).join('')}
+    </div>`;
+
+    d.innerHTML = renderG(p1, 'PAI A', '#e4000f') + renderG(p2, 'PAI B', '#049cd8') + '<div style="margin:10px 0; border-top:2px solid #000"></div>' + renderG(f1, 'NOVO FILHO', '#43b047');
+  }
+
+  function novasMutacoes() {
+    const d = document.getElementById('mutacao-display');
+    const original = Array.from({ length: 10 }, () => Math.floor(Math.random() * 7));
+    const mutado = [...original];
+    mutado[4] = 'X';
+
+    d.innerHTML = `
+    <div style="font-size:8px; font-family:'Press Start 2P'">
+      NORMAL:<br>
+      ${original.map(g => `<span class="gene" style="width:20px; height:20px; line-height:20px; font-size:10px;">${g}</span>`).join('')}
+      <br><br>GLITCH!<br>
+      ${mutado.map((g, i) => `<span class="gene" style="background:${i === 4 ? '#000' : '#fff'}; color:${i === 4 ? '#fbd000' : '#000'}; width:20px; height:20px; line-height:20px; font-size:10px;">${g}</span>`).join('')}
+    </div>
+  `;
+  }
+
+  showStep(0);
+</script>

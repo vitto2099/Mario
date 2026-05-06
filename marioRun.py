@@ -53,7 +53,6 @@ class Individuo:
     def crossover(self, outro):
         ponto = random.randint(1, self.n_frames - 1)
 
-        # Dois filhos: um com DNA do pai1+pai2, outro com pai2+pai1
         dna_filho1 = self.cromossomo[:ponto] + outro.cromossomo[ponto:]
         dna_filho2 = outro.cromossomo[:ponto] + self.cromossomo[ponto:]
 
@@ -105,7 +104,6 @@ class AlgoritmoGenetico:
         return sum(ind.nota_avaliacao for ind in self.populacao)
 
     def seleciona_pai(self, soma_avaliacao):
-        # Roleta: pais com maior nota têm mais chance de ser escolhidos
         pai = -1
         valor_sorteado = random.random() * soma_avaliacao
         soma = 0
@@ -121,7 +119,7 @@ class AlgoritmoGenetico:
         print("G:%s -> Distancia: %.1f | Cromossomo: %s" % (
             melhor.geracao,
             melhor.nota_avaliacao,
-            melhor.cromossomo[:10]  # exibe só os 10 primeiros genes pra não poluir
+            melhor.cromossomo[:10]
         ))
 
     def resolver(self, taxa_mutacao, numero_geracoes, n_frames):
@@ -129,7 +127,6 @@ class AlgoritmoGenetico:
 
         self.inicializa_populacao(n_frames)
 
-        # Avalia população inicial
         for individuo in self.populacao:
             print(f"Avaliando individuo...")
             individuo.avaliacao()
@@ -146,7 +143,6 @@ class AlgoritmoGenetico:
 
             soma_avaliacao = self.soma_avaliacoes()
 
-            # Caso todos tenham nota 0 (geração inicial ruim), usa seleção uniforme
             if soma_avaliacao == 0:
                 soma_avaliacao = 1
                 for ind in self.populacao:
@@ -154,7 +150,6 @@ class AlgoritmoGenetico:
 
             nova_populacao = []
 
-            # Gera dois filhos por vez, igual ao da mochila
             for _ in range(0, self.tamanho_populacao, 2):
                 pai1 = self.seleciona_pai(soma_avaliacao)
                 pai2 = self.seleciona_pai(soma_avaliacao)
@@ -169,7 +164,6 @@ class AlgoritmoGenetico:
                 nova_populacao.append(filho1)
                 nova_populacao.append(filho2)
 
-            # Antiga população vai para o "lixo"
             self.populacao = nova_populacao[:self.tamanho_populacao]
 
             for individuo in self.populacao:
